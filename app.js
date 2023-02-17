@@ -1,6 +1,8 @@
 const {request} = require('http')
 require('dotenv').config()
 
+const{read_file,write_to_file}=require('./api/api')
+
 const TelegramBot = require('node-telegram-bot-api')
 let num =3
 const bot = new TelegramBot(process.env.TG_TOKEN,{
@@ -11,7 +13,9 @@ bot.on('polling_error', msg => console.log(msg))
 bot.on ('message', async(msg) => {
     let chatId = msg.chat.id
     let text = msg.text
-    if(msg.text == '/start'){
+    
+    if(text == '/start'){
+       
         bot.sendMessage(chatId, `Salom, Ingliz tilida so'z kiriting!!!`, {
            reply_markup: JSON.stringify({
             keyboard: [
@@ -28,20 +32,23 @@ bot.on ('message', async(msg) => {
             resize_keyboard: true
            }) 
         })
-    }else{
-        bot.sendMessage(chatId, msg.txt, {
+    }else if((text != '👍') && (text != '👍')) {
+        bot.sendMessage(chatId, msg.text, {
             reply_markup: JSON.stringify({
              keyboard: [
                  [
                      {
-                         text: '👍'
+                         text: '👍',
+                         callback_data: "liked_photos"
                      },
                      {
-                         text: '👎'
+                         text: '👎',
+                         callback_data: "disliked_photos"
                      } 
  
                  ]
-             ]
+             ],
+             resize_keyboard: true
             }) 
          })
 
@@ -49,6 +56,7 @@ bot.on ('message', async(msg) => {
          let obj = await result.json()
          let {photos} = obj
          for(let one of photos){
+
              bot.sendPhoto(chatId, one.url, {
                 reply_markup: {
                     inline_keyboard:
@@ -68,60 +76,55 @@ bot.on ('message', async(msg) => {
                 
             })
         }
+
         
-        console.log(photos);
+    }else{
+        bot.sendPhoto(chatId)
     }
-})
+
+    
+});
+
+    bot.on('callback_query', msg => {
+        let newPhoto = msg.message.photo[0].file_id
+        let like_photos = read_file('like_photos.json')
+        if(msg.data == 'ok'){
+            console.log(msg,`<<<ok>>>`);
+
+            let founded_like_photos = like_photos.find(photo => photo.file_id == newPhoto)
+            if(!founded_like_photos){
+                like_photos.push({
+                    file_id: newPhoto,
+                    num: like_photos.length +1
+                })
+                write_to_file('like_photos.json',like_photos)
+                return
+            }else{
+                return
+            }  
+                  
+        }
+        
+
+            let dislike_photos = read_file('dislike_photos.json')
+            
+            if(msg.data == 'nok'){
+            let founded_dislike_photos = dislike_photos.find(photo => photo.file_id == newPhoto)
+            if(!founded_dislike_photos){
+                dislike_photos.push({
+                    file_id: newPhoto,
+                    num: dislike_photos.length +1
+                })
+                write_to_file('dislike_photos.json',dislike_photos)
+                return
+            }else{
+                return
+            }              
+        }
+     
+        })
+    
+    
 
 
-// if(msg.text == 'Lavash'){
-//     bot.sendPhoto(msg.chat.id, 'https://static.1000.menu/res/640/img/content-v2/43/f0/42850/farshirovannyi-lavash-v-duxovke_1580382171_10_max.jpg', {
-//         caption: `
-//          <strong>Lavash</strong>
-//          <i class="tg-spoiler">24000</i>
-//          <span class="tg-spoiler">Katta va kichik lavash...</span>
-//         `,
-//         parse_mode: "HTML",
-//         reply_markup:{
-//             inline_keyboard: [
-//                 [
-//                     {
-//                         text: "Zakaz berish",
-//                         callback_data: "zakaz"
-//                     },
-//                     {
-//                         text: "batafsil",
-//                         url: 'https://www.npmjs.com/package/node-telegram-bot-api'
-//                     }
-//                 ]
-//             ]
-//         }
-//     })
-
-// }
-
-
-
-// bot.on("callback_query", msg => {
-//     if(msg.data == 'zakaz'){
-//         bot.sendMessage(msg.message.chat.id, 'Kontaktinggizni ulashing', {
-//             reply_markup: JSON.stringify({
-//                 keyboard: [
-//                     [
-//                         {
-//                             text: 'Contact berish',
-//                             request_contact: true
-//                         },
-//                         {
-//                             text: 'Locatsiyani berish',
-//                             request_location: true
-//                         }
-//                     ]
-//                 ],
-//                 resize_keyboard: true
-//             })
-//         })
-//     }
-// })
-
-
+ 
