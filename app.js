@@ -32,7 +32,7 @@ bot.on ('message', async(msg) => {
             resize_keyboard: true
            }) 
         })
-    }else if((text != '👍') && (text != '👍')) {
+    }else if((text != '👍') && (text != '👎')) {
         bot.sendMessage(chatId, msg.text, {
             reply_markup: JSON.stringify({
              keyboard: [
@@ -78,8 +78,27 @@ bot.on ('message', async(msg) => {
         }
 
         
-    }else{
-        bot.sendPhoto(chatId)
+    }else if(text == '👍'){
+        let liked_photos = read_file('like_photos.json')
+
+        if(liked_photos.length>10){
+            for(; liked_photos.length>10;){
+                bot.sendMediaGroup(chatId,liked_photos.splice(0,9))
+                liked_photos.splice(0,9)
+            }
+            bot.sendMediaGroup(chatId,liked_photos)
+        }
+        bot.sendMediaGroup(chatId,liked_photos)
+    }else if(text == '👎'){
+        let disliked_photos = read_file('dislike_photos.json')
+        if(disliked_photos.length>10){
+            for(; disliked_photos.length>10;){
+                bot.sendMediaGroup(chatId,disliked_photos.splice(0,9))
+                disliked_photos.splice(0,9)
+            }
+            bot.sendMediaGroup(chatId,disliked_photos)
+        }
+        bot.sendMediaGroup(chatId,disliked_photos)
     }
 
     
@@ -88,32 +107,58 @@ bot.on ('message', async(msg) => {
     bot.on('callback_query', msg => {
         let newPhoto = msg.message.photo[0].file_id
         let like_photos = read_file('like_photos.json')
-        if(msg.data == 'ok'){
-            console.log(msg,`<<<ok>>>`);
+        let dislike_photos = read_file('dislike_photos.json')
+        let founded_dislike_photos = dislike_photos.find(photo => photo.media == newPhoto)
+        let founded_like_photos = like_photos.find(photo => photo.media == newPhoto)
+        if(msg.data == 'ok'){          
 
-            let founded_like_photos = like_photos.find(photo => photo.file_id == newPhoto)
             if(!founded_like_photos){
+                if(founded_dislike_photos){
+                    dislike_photos.forEach((el,inx) => {
+                        
+                        if(el.media == newPhoto){
+                            console.log("IF>>>>");
+                            dislike_photos.splice(inx,1)
+                        }
+                        
+                    });
+
+                    write_to_file('dislike_photos.json',dislike_photos)
+
+                }
                 like_photos.push({
-                    file_id: newPhoto,
-                    num: like_photos.length +1
+                    media: newPhoto,
+                    type: 'photo'
                 })
                 write_to_file('like_photos.json',like_photos)
                 return
             }else{
+                
                 return
             }  
                   
         }
         
 
-            let dislike_photos = read_file('dislike_photos.json')
             
             if(msg.data == 'nok'){
-            let founded_dislike_photos = dislike_photos.find(photo => photo.file_id == newPhoto)
             if(!founded_dislike_photos){
+                if(founded_like_photos){
+                    like_photos.forEach((el,inx) => {
+                        
+                        if(el.media == newPhoto){
+                            console.log("IF>>>>");
+                            like_photos.splice(inx,1)
+                        }
+                        
+                    });
+
+                    write_to_file('like_photos.json',like_photos)
+
+                }
                 dislike_photos.push({
-                    file_id: newPhoto,
-                    num: dislike_photos.length +1
+                    media: newPhoto,
+                    type: 'photo'
                 })
                 write_to_file('dislike_photos.json',dislike_photos)
                 return
